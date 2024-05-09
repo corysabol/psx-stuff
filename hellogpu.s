@@ -70,12 +70,60 @@ Main:
 	li $t1, 0x00EF013F
 	sw $t1, GP0($t0)
 
-	;; Draw a flat-shaded triangle
-	;; ----------------------------------------
-	
+lui $a0, IO_BASE_ADDR
+;; Invoke subroutine to draw a flat triangle
+li $s0, 0xFFFF00	; Param Color
+li $s1, 200				; x1
+li $s2, 40				; y1
+li $s3, 288				; x2
+li $s4, 56				; y2
+li $s5, 224				; x3
+li $s6, 200				; y3
+jal DrawFlatTriangle
+nop
+
 LoopForever:
 	j LoopForever
 	nop
 	
+;; Flat triangle subroutine
+;; ----------------------------------------
+;; Args:
+;; $a0 = IO_BASE_ADDR (IO ports at 0x1F80****)
+;; $s0 = Color (Ex: 0xBBGGRR)
+;; $s1 = x1
+;; $s2 = y1
+;; $s3 = x2
+;; $s4 = y2
+;; $s5 = x3
+;; $s6 = y3
+;; ----------------------------------------
+DrawFlatTriangle:
+	lui $t0, 0x2000		; Command: 0x20 Flat triangle
+	or	$t1, $t0			; Command | Color
+	sw	$t1, GP0($a0)	; Write to GP0 (Command + Color)
+
+	; Vertex 1
+	sll		$s2, $s2, 16			; y1 <<= 16
+	andi	$s1, $s1, 0xFFFF	; x1 &= 0xFFFF
+	or		$t1, $s1, $s2			; x1 | y1
+	sw		$t1, GP0($a0)			; Write to GP0 (Vertex 1)
+
+	; Vertex 2
+	sll		$s4, $s4, 16			; y2 <<= 16
+	andi	$s3, $s3, 0xFFFF	; x2 &= 0xFFFF
+	or		$t1, $s3, $s4			; x2 | y2
+	sw		$t1, GP0($a0)			; Write to GP0 (Vertex 2)
+
+	; Vertex 3
+	sll		$s6, $s6, 16			; y3 <<= 16
+	andi	$s5, $s5, 0xFFFF	; x3 &= 0xFFFF
+	or		$t1, $s5, $s6			; x3 | y3
+	sw		$t1, GP0($a0)			; Write to GP0 (Vertex 3)
+
+	; return to caller
+	jr $ra
+	nop
+
 Exit:
 .close
